@@ -31,19 +31,32 @@ class ListaTarefas extends StatefulWidget {
 class _ListaTarefasState extends State<ListaTarefas> {
   List<Tarefa> tarefas = [];
 
+  List<Widget> topPageContent = [];
+
+  int currentTopPageContentIndex = 1;
+
   final TextEditingController _tituloController = TextEditingController();
   final TextEditingController _anotacaoController = TextEditingController();
 
   void adicionarTarefa() {
-    print(
-        "Titulo: ${_tituloController.text},\n Anotação: ${_anotacaoController.text}");
-
-    setState(() {
-      tarefas.add(Tarefa(_tituloController.text, _anotacaoController.text));
-    });
+    String titulo = _tituloController.text;
+    String anotacao = _anotacaoController.text;
 
     _tituloController.text = '';
     _anotacaoController.text = '';
+
+    setState(() {
+      tarefas.add(
+          Tarefa(titulo, anotacao, Object.hash(titulo, anotacao).toString()));
+
+      currentTopPageContentIndex = 1;
+    });
+  }
+
+  void exibirInput() {
+    setState(() {
+      currentTopPageContentIndex = 0;
+    });
   }
 
   @override
@@ -55,16 +68,111 @@ class _ListaTarefasState extends State<ListaTarefas> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InputDados(_tituloController, _anotacaoController, adicionarTarefa),
-        Column(
+    topPageContent.clear();
+    topPageContent.add(
+        InputDados(_tituloController, _anotacaoController, adicionarTarefa));
+    topPageContent.add(NovaTarefaButton(exibirInput));
+
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(16),
+      child: ListView(
+        children: [
+          topPageContent[currentTopPageContentIndex],
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: Divider(
+              thickness: 2,
+              color: Colors.black38,
+            ),
+          ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(8),
+            itemCount: tarefas.length,
+            itemBuilder: (BuildContext context, index) {
+              return TarefaCard(tarefas[index].titulo, tarefas[index].anotacao);
+            },
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class TarefaCard extends StatelessWidget {
+  final String titulo;
+  final String anotacao;
+
+  const TarefaCard(this.titulo, this.anotacao, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            for (var item in tarefas)
-              Text("Titulo: ${item.titulo},\n Anotação: ${item.anotacao}")
+            Row(
+              children: [
+                IconButton(
+                    onPressed: () {},
+                    icon: Icon(
+                      Icons.circle_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    )),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titulo,
+                      style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      anotacao,
+                      style: const TextStyle(color: Colors.black38, fontSize: 12),
+                    )
+                  ],
+                )
+              ],
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.delete,
+                size: 20,
+                color: Colors.red,
+              ),
+            )
           ],
-        )
-      ],
+        ),
+      ),
+    );
+  }
+}
+
+class NovaTarefaButton extends StatelessWidget {
+  final void Function() handleNewTask;
+
+  const NovaTarefaButton(this.handleNewTask, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: handleNewTask,
+      label: const Text(
+        'Criar Nova Tarefa',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      icon: const Icon(Icons.add),
     );
   }
 }
@@ -72,8 +180,10 @@ class _ListaTarefasState extends State<ListaTarefas> {
 class Tarefa {
   String titulo;
   String anotacao;
+  String id;
+  bool status = false;
 
-  Tarefa(this.titulo, this.anotacao);
+  Tarefa(this.titulo, this.anotacao, this.id);
 }
 
 class InputDados extends StatelessWidget {
@@ -89,7 +199,7 @@ class InputDados extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.center,
-      padding: const EdgeInsets.fromLTRB(32, 16, 32, 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Column(
         children: [
           Padding(
@@ -123,7 +233,7 @@ class InputDados extends StatelessWidget {
           FloatingActionButton.extended(
             onPressed: adicionarTarefa,
             label: const Text('Adicionar'),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.check),
           )
         ],
       ),
