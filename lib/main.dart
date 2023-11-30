@@ -4,6 +4,16 @@ void main() {
   runApp(const MyApp());
 }
 
+var TAREFA_CHECK_BUTTON_MAP = {
+  "false": Icons.circle_outlined,
+  "true": Icons.circle
+};
+
+var TAREFA_TEXT_DECORATION_MAP = {
+  "false": null,
+  "true": TextDecoration.lineThrough
+};
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -59,6 +69,29 @@ class _ListaTarefasState extends State<ListaTarefas> {
     });
   }
 
+  void marcarComoFeita(String tarefaId) {
+    setState(() {
+      for (var tarefa in tarefas) {
+        if (tarefa.id == tarefaId) {
+          tarefa.status = !tarefa.status;
+        }
+      }
+    });
+  }
+
+  void deletarTarefa(String tarefaId){
+     List<Tarefa> novaListaTarefas =[];
+
+    setState(() {
+      for (var tarefa in tarefas) {
+        if (tarefa.id != tarefaId) {
+          novaListaTarefas.add(tarefa);
+        }
+      }
+      tarefas = novaListaTarefas;
+    });
+  }
+
   @override
   void dispose() {
     _tituloController.dispose();
@@ -92,7 +125,7 @@ class _ListaTarefasState extends State<ListaTarefas> {
             padding: const EdgeInsets.all(8),
             itemCount: tarefas.length,
             itemBuilder: (BuildContext context, index) {
-              return TarefaCard(tarefas[index].titulo, tarefas[index].anotacao);
+              return TarefaCard(tarefas[index], marcarComoFeita, deletarTarefa);
             },
             separatorBuilder: (BuildContext context, int index) =>
                 const Divider(),
@@ -104,10 +137,12 @@ class _ListaTarefasState extends State<ListaTarefas> {
 }
 
 class TarefaCard extends StatelessWidget {
-  final String titulo;
-  final String anotacao;
+  final Tarefa tarefa;
+  final void Function(String idTarefa) marcaTarefaComoFeita;
+  final void Function(String idTarefa) deletarTarefa;
 
-  const TarefaCard(this.titulo, this.anotacao, {super.key});
+
+  const TarefaCard(this.tarefa, this.marcaTarefaComoFeita, this.deletarTarefa, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +155,11 @@ class TarefaCard extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      marcaTarefaComoFeita(tarefa.id);
+                    },
                     icon: Icon(
-                      Icons.circle_outlined,
+                      TAREFA_CHECK_BUTTON_MAP[tarefa.status.toString()],
                       size: 20,
                       color: Theme.of(context).colorScheme.primary,
                     )),
@@ -130,22 +167,30 @@ class TarefaCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      titulo,
-                      style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                      tarefa.titulo,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        decoration: TAREFA_TEXT_DECORATION_MAP[
+                            tarefa.status.toString()],
+                      ),
                     ),
                     Text(
-                      anotacao,
-                      style: const TextStyle(color: Colors.black38, fontSize: 12),
+                      tarefa.anotacao,
+                      style: TextStyle(
+                        color: Colors.black38,
+                        fontSize: 12,
+                        decoration: TAREFA_TEXT_DECORATION_MAP[
+                            tarefa.status.toString()],
+                      ),
                     )
                   ],
                 )
               ],
             ),
             IconButton(
-              onPressed: () {},
+              onPressed: () {deletarTarefa(tarefa.id);},
               icon: const Icon(
                 Icons.delete,
                 size: 20,
@@ -231,7 +276,15 @@ class InputDados extends StatelessWidget {
             ),
           ),
           FloatingActionButton.extended(
-            onPressed: adicionarTarefa,
+            onPressed: (){
+              if (_tituloController.text.length>0 && _anotacaoController.text.length>0){
+                adicionarTarefa();
+              }else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Atenção os campos de Título e Anotação são obrigatórios!'))
+                );
+              }
+            },
             label: const Text('Adicionar'),
             icon: const Icon(Icons.check),
           )
